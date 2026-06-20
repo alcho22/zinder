@@ -1,0 +1,19 @@
+node_modules
+.next
+out
+build
+*.local
+
+# env files
+.env
+.env.*
+!.env.example
+
+# Editor / OS
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.log
+npm-debug.log*
+next-env.d.ts
