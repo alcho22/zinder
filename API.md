@@ -6,7 +6,7 @@ treat that file as the source of truth for field names and shapes.
 
 **Conventions**
 
-- Base URL configured via `VITE_API_BASE_URL` (e.g. `https://api.zinder.com`).
+- Base URL configured via `NEXT_PUBLIC_API_BASE_URL` (e.g. `https://api.zinder.com`).
 - JSON in, JSON out. `Content-Type: application/json`.
 - Auth: `Authorization: Bearer <token>` header. Token issued at login/register.
 - Errors: non-2xx with `{ "message": "..." }`. The client surfaces `message`.

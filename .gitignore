@@ -1,7 +1,10 @@
 node_modules
-dist
-dist-ssr
+.next
+out
+build
 *.local
+
+# env files
 .env
 .env.*
 !.env.example
@@ -13,3 +16,4 @@ dist-ssr
 .DS_Store
 *.log
 npm-debug.log*
+next-env.d.ts

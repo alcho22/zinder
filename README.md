@@ -1,12 +1,12 @@
 # Zinder — Frontend
 
 Frontend for **Zinder**, an automotive services marketplace (Austin, TX).
-Built with **React + TypeScript + Vite + Tailwind CSS + React Router**.
+Built with **Next.js (App Router) + TypeScript + Tailwind CSS**.
 
 This repo is the **frontend only**. It ships with a complete mock backend so it
 runs and demos standalone. A backend developer connects the real API by
-implementing the endpoints documented in [`API.md`](./API.md) and flipping one
-environment flag — no component code needs to change.
+implementing the endpoints documented in [`API.md`](./API.md) and setting two
+environment variables — no component code needs to change.
 
 ---
 
@@ -14,15 +14,15 @@ environment flag — no component code needs to change.
 
 ```bash
 npm install
-npm run dev        # http://localhost:5173  (runs against mock data)
+npm run dev        # http://localhost:3000  (runs against mock data)
 ```
 
 Other scripts:
 
 ```bash
-npm run build      # type-check + production build into dist/
-npm run preview    # preview the production build
-npm run lint       # type-check only (tsc --noEmit)
+npm run build      # production build (also type-checks)
+npm run start      # serve the production build
+npm run lint       # next lint
 ```
 
 ### Demo accounts (mock mode — any password works)
@@ -39,35 +39,53 @@ OTP verification screen accepts code **`123456`**.
 
 ## Connecting the real backend
 
-1. Copy `.env.example` to `.env`.
-2. Set `VITE_USE_MOCK=false` and `VITE_API_BASE_URL=https://your-api`.
+1. Copy `.env.example` to `.env.local`.
+2. Set `NEXT_PUBLIC_USE_MOCK=false` and `NEXT_PUBLIC_API_BASE_URL=https://your-api`.
 3. Implement the endpoints listed in [`API.md`](./API.md).
 
-That's it. All network access is centralized — see "Architecture" below.
+That's it. All network access is centralized — see "Architecture" below. For
+local dev against a backend on another port, you can also uncomment the
+`rewrites()` proxy in `next.config.mjs`.
 
 ---
 
 ## Architecture
 
 ```
+app/                  # Next.js App Router — routing only (thin client wrappers)
+├── layout.tsx        #   root layout: <html>, fonts, <AuthProvider>, Suspense
+├── (public)/         #   route group with the public header/footer layout
+│   ├── page.tsx      #     home
+│   ├── categories/[slug]/page.tsx, services/[slug]/page.tsx, providers/[id]/page.tsx, …
+│   └── terms/, privacy-policy/, …  (legal pages)
+├── (auth)/           #   login, register, verify-otp, forgot/reset password
+├── dashboard/        #   customer area  (layout = ProtectedRoute + sidebar)
+├── provider/         #   provider area  (layout = ProtectedRoute[provider,admin])
+├── admin/            #   admin area     (layout = ProtectedRoute[admin])
+├── request/          #   service request wizard (protected, full-screen)
+└── not-found.tsx
+
 src/
 ├── types/            # ← THE DATA CONTRACT. All domain types (User, Order, …).
 ├── services/         # ← THE API LAYER. One file per domain.
 │   ├── http.ts       #    fetch wrapper + USE_MOCK switch + auth token handling
-│   ├── auth.ts       #    login, register, OTP, password reset, getCurrentUser
-│   ├── catalog.ts    #    categories, services, service options (+ admin CRUD)
-│   ├── providers.ts  #    provider search/filter, profiles, provider services
-│   ├── orders.ts     #    create request, list, quotes, accept/reject
-│   ├── account.ts    #    profile, vehicles, addresses, provider application, uploads
-│   ├── notifications.ts
-│   ├── admin.ts      #    users, approvals, lead charges, settings, stats
+│   ├── auth.ts catalog.ts providers.ts orders.ts account.ts notifications.ts admin.ts
 │   └── mock/         #    in-memory seed data (DELETE once API is live)
 ├── context/          # AuthContext (session state)
 ├── components/       # Layouts (public/dashboard), route guard, shared UI
-├── pages/            # Route components grouped by area (public/auth/customer/provider/admin)
+├── views/            # Screen components, grouped by area (public/auth/customer/provider/admin)
 ├── hooks/            # useAsync data-fetching helper
-└── lib/              # formatting helpers
+└── lib/
+    ├── router.tsx    # react-router-dom→Next.js compatibility shim (Link/useNavigate/…)
+    └── format.ts     # formatting helpers
 ```
+
+Why `app/` is thin: each route file is a small client wrapper that renders a
+screen component from `src/views`. The screens were written framework-agnostic
+and use a small **router shim** (`src/lib/router.tsx`) that maps the
+`react-router`-style helpers (`Link to=`, `useNavigate`, `useParams`,
+`useSearchParams`) onto `next/navigation`. This keeps all the real UI in one
+place and makes the routing layer trivial to read.
 
 **Every backend call lives in `src/services/`.** Each service function has a
 comment showing its real HTTP method + path, then a mock fallback. Example:
@@ -84,8 +102,9 @@ export async function createOrder(payload, customerId) {
 
 After login the JWT is stored in `localStorage` under `zinder.token` and sent as
 `Authorization: Bearer <token>` on every request. `GET /auth/me` restores the
-session on reload. Role-based routing is enforced client-side in
-`components/ProtectedRoute.tsx` — **the backend must enforce the same rules.**
+session on reload. Role-based routing is enforced in
+`components/ProtectedRoute.tsx` (used by the dashboard/provider/admin layouts) —
+**the backend must enforce the same rules.**
 
 ---
 
@@ -115,5 +134,9 @@ session on reload. Role-based routing is enforced client-side in
   data it returns.
 - **Lead fees:** computed from the service's `leadTier` × the tier amounts in
   platform settings, charged at quote time.
+
+> Note: the app is currently client-rendered (data fetched in the browser in
+> mock mode). Once the API exists, individual screens can be migrated to Server
+> Components / server-side fetching incrementally without touching `src/services`.
 
 See [`API.md`](./API.md) for the full endpoint list and payload shapes.

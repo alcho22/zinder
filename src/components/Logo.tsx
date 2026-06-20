@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom';
+import { Link } from '@/lib/router';
 
 export function Logo({ className = '', light = false }: { className?: string; light?: boolean }) {
   return (

@@ -1,4 +1,7 @@
-import { Link, NavLink, Outlet } from 'react-router-dom';
+'use client';
+
+import type { ReactNode } from 'react';
+import { Link, NavLink } from '@/lib/router';
 import { useState } from 'react';
 import { Logo } from './Logo';
 import { useAuth } from '@/context/AuthContext';
@@ -11,7 +14,7 @@ const NAV = [
   { to: '/contact', label: 'Contact' },
 ];
 
-export function PublicLayout() {
+export function PublicLayout({ children }: { children: ReactNode }) {
   const { user } = useAuth();
   const [open, setOpen] = useState(false);
 
@@ -73,9 +76,7 @@ export function PublicLayout() {
         )}
       </header>
 
-      <main className="flex-1">
-        <Outlet />
-      </main>
+      <main className="flex-1">{children}</main>
 
       <Footer />
     </div>

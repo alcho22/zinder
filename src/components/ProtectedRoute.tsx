@@ -1,5 +1,7 @@
-import { Navigate, useLocation } from 'react-router-dom';
-import type { ReactNode } from 'react';
+'use client';
+
+import { useRouter, usePathname } from 'next/navigation';
+import { useEffect, type ReactNode } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { PageLoader } from './ui';
 import type { UserRole } from '@/types';
@@ -17,19 +19,23 @@ export function ProtectedRoute({
   roles?: UserRole[];
 }) {
   const { user, loading } = useAuth();
-  const location = useLocation();
+  const router = useRouter();
+  const pathname = usePathname() ?? '';
 
-  if (loading) return <PageLoader />;
+  const wrongRole = !!user && !!roles && !roles.includes(user.role);
 
-  if (!user) {
-    return <Navigate to="/login" state={{ from: location.pathname }} replace />;
-  }
+  useEffect(() => {
+    if (loading) return;
+    if (!user) {
+      router.replace(`/login?redirect=${encodeURIComponent(pathname)}`);
+    } else if (wrongRole) {
+      const home =
+        user.role === 'admin' ? '/admin' : user.role === 'provider' ? '/provider/dashboard' : '/dashboard';
+      router.replace(home);
+    }
+  }, [loading, user, wrongRole, router, pathname]);
 
-  if (roles && !roles.includes(user.role)) {
-    // Logged in but wrong role — send them to their own home.
-    const home = user.role === 'admin' ? '/admin' : user.role === 'provider' ? '/provider/dashboard' : '/dashboard';
-    return <Navigate to={home} replace />;
-  }
+  if (loading || !user || wrongRole) return <PageLoader />;
 
   return <>{children}</>;
 }

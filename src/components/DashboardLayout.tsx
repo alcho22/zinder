@@ -1,4 +1,6 @@
-import { Link, NavLink, Outlet, useNavigate } from 'react-router-dom';
+'use client';
+
+import { Link, NavLink, useNavigate } from '@/lib/router';
 import { useState, type ReactNode } from 'react';
 import { Logo } from './Logo';
 import { useAuth } from '@/context/AuthContext';
@@ -20,11 +22,13 @@ export function DashboardLayout({
   title,
   accent = 'brand',
   headerExtra,
+  children,
 }: {
   nav: NavItem[];
   title: string;
   accent?: 'brand' | 'accent';
   headerExtra?: ReactNode;
+  children: ReactNode;
 }) {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
@@ -99,9 +103,7 @@ export function DashboardLayout({
           </div>
         </header>
 
-        <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-8 sm:px-6">
-          <Outlet />
-        </main>
+        <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-8 sm:px-6">{children}</main>
       </div>
     </div>
   );

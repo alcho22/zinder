@@ -8,8 +8,8 @@
  * │ `src/services/*.ts`. Today those functions return MOCK data (see          │
  * │ `USE_MOCK` below and `src/services/mock/`). To connect the real backend:  │
  * │                                                                           │
- * │  1. Set VITE_USE_MOCK=false in a `.env` file (see `.env.example`).        │
- * │  2. Set VITE_API_BASE_URL to your API root (e.g. https://api.zinder.com). │
+ * │  1. Set NEXT_PUBLIC_USE_MOCK=false in `.env.local` (see `.env.example`).  │
+ * │  2. Set NEXT_PUBLIC_API_BASE_URL to your API root (e.g. https://api...).  │
  * │  3. Implement endpoints to match the calls in each service file. Each     │
  * │     mock function has a matching `http.*` call commented above it showing │
  * │     the expected method + path + payload.                                 │
@@ -19,11 +19,9 @@
  * └─────────────────────────────────────────────────────────────────────────┘
  */
 
-const API_BASE_URL =
-  (import.meta.env.VITE_API_BASE_URL as string | undefined) ?? '/api';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? '/api';
 
-export const USE_MOCK =
-  (import.meta.env.VITE_USE_MOCK as string | undefined) !== 'false';
+export const USE_MOCK = process.env.NEXT_PUBLIC_USE_MOCK !== 'false';
 
 const TOKEN_KEY = 'zinder.token';
 
