@@ -1,11 +1,119 @@
-<div align="center">
+# Zinder — Frontend
 
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
+Frontend for **Zinder**, an automotive services marketplace (Austin, TX).
+Built with **React + TypeScript + Vite + Tailwind CSS + React Router**.
 
-  <h1>Built with AI Studio</h2>
+This repo is the **frontend only**. It ships with a complete mock backend so it
+runs and demos standalone. A backend developer connects the real API by
+implementing the endpoints documented in [`API.md`](./API.md) and flipping one
+environment flag — no component code needs to change.
 
-  <p>The fastest path from prompt to production with Gemini.</p>
+---
 
-  <a href="https://aistudio.google.com/apps">Start building</a>
+## Quick start
 
-</div>
+```bash
+npm install
+npm run dev        # http://localhost:5173  (runs against mock data)
+```
+
+Other scripts:
+
+```bash
+npm run build      # type-check + production build into dist/
+npm run preview    # preview the production build
+npm run lint       # type-check only (tsc --noEmit)
+```
+
+### Demo accounts (mock mode — any password works)
+
+| Role     | Email                 | Lands on               |
+| -------- | --------------------- | ---------------------- |
+| Customer | `customer@zinder.com` | `/dashboard`           |
+| Provider | `provider@zinder.com` | `/provider/dashboard`  |
+| Admin    | `admin@zinder.com`    | `/admin`               |
+
+OTP verification screen accepts code **`123456`**.
+
+---
+
+## Connecting the real backend
+
+1. Copy `.env.example` to `.env`.
+2. Set `VITE_USE_MOCK=false` and `VITE_API_BASE_URL=https://your-api`.
+3. Implement the endpoints listed in [`API.md`](./API.md).
+
+That's it. All network access is centralized — see "Architecture" below.
+
+---
+
+## Architecture
+
+```
+src/
+├── types/            # ← THE DATA CONTRACT. All domain types (User, Order, …).
+├── services/         # ← THE API LAYER. One file per domain.
+│   ├── http.ts       #    fetch wrapper + USE_MOCK switch + auth token handling
+│   ├── auth.ts       #    login, register, OTP, password reset, getCurrentUser
+│   ├── catalog.ts    #    categories, services, service options (+ admin CRUD)
+│   ├── providers.ts  #    provider search/filter, profiles, provider services
+│   ├── orders.ts     #    create request, list, quotes, accept/reject
+│   ├── account.ts    #    profile, vehicles, addresses, provider application, uploads
+│   ├── notifications.ts
+│   ├── admin.ts      #    users, approvals, lead charges, settings, stats
+│   └── mock/         #    in-memory seed data (DELETE once API is live)
+├── context/          # AuthContext (session state)
+├── components/       # Layouts (public/dashboard), route guard, shared UI
+├── pages/            # Route components grouped by area (public/auth/customer/provider/admin)
+├── hooks/            # useAsync data-fetching helper
+└── lib/              # formatting helpers
+```
+
+**Every backend call lives in `src/services/`.** Each service function has a
+comment showing its real HTTP method + path, then a mock fallback. Example:
+
+```ts
+/** POST /orders -> Order */
+export async function createOrder(payload, customerId) {
+  if (!USE_MOCK) return http.post('/orders', payload);   // ← real backend
+  /* ...mock implementation... */                         // ← used until then
+}
+```
+
+### Auth
+
+After login the JWT is stored in `localStorage` under `zinder.token` and sent as
+`Authorization: Bearer <token>` on every request. `GET /auth/me` restores the
+session on reload. Role-based routing is enforced client-side in
+`components/ProtectedRoute.tsx` — **the backend must enforce the same rules.**
+
+---
+
+## What's implemented (per the Product Plan)
+
+- **Public site:** home + search, categories, services, provider discovery with
+  filters (distance/rating/price/mobile/certified), provider profiles, about,
+  contact, FAQ, legal pages.
+- **Auth:** register, login, OTP, forgot/reset password.
+- **Customer dashboard:** overview, profile, addresses, vehicles, requests &
+  request detail (with quote acceptance), notifications, become-a-provider
+  onboarding (5 steps), and the full **service request wizard** with dynamic
+  per-service questions.
+- **Provider dashboard:** overview, request inbox + detail with **accept/quote
+  (lead-fee confirmation)** and reject, services & pricing management, lead
+  charges, business profile, documents, notifications.
+- **Admin dashboard:** overview/stats, provider approvals, orders (search +
+  filter), users, providers, category/service/service-option catalog management,
+  dynamic-form builder, and platform settings (incl. lead-fee tiers).
+
+## Notable conventions
+
+- **Snapshots:** orders store vehicle/address/option snapshots so historical
+  requests stay accurate even if the source records change later.
+- **Privacy:** the UI hides full customer contact details from providers until a
+  request is accepted (Product Plan §6). The backend must enforce this in the
+  data it returns.
+- **Lead fees:** computed from the service's `leadTier` × the tier amounts in
+  platform settings, charged at quote time.
+
+See [`API.md`](./API.md) for the full endpoint list and payload shapes.
